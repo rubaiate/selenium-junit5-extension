@@ -5,8 +5,10 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.junit.jupiter.api.extension.*;
 
+import static org.junit.jupiter.api.extension.ExtensionContext.*;
+
 public class SeleniumDriverExtension implements ParameterResolver, AfterEachCallback, TestExecutionExceptionHandler {
-    final static ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(SeleniumDriverExtension.class);
+    final static Namespace NAMESPACE = Namespace.create(SeleniumDriverExtension.class);
     final static String DRIVER_KEY = "selenium-driver";
 
     @Override
@@ -33,7 +35,7 @@ public class SeleniumDriverExtension implements ParameterResolver, AfterEachCall
     }
 
     private void quitWebDriver(ExtensionContext extensionContext) {
-        ExtensionContext.Store store = extensionContext.getStore(NAMESPACE);
+        Store store = extensionContext.getStore(NAMESPACE);
         WebDriver driver = (WebDriver) store.get(DRIVER_KEY);
         if (driver != null) {
             driver.quit();
