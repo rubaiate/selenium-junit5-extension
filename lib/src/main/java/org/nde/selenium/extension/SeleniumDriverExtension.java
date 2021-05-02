@@ -1,5 +1,6 @@
 package org.nde.selenium.extension;
 
+import org.junit.jupiter.api.extension.support.TypeBasedParameterResolver;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -7,17 +8,12 @@ import org.junit.jupiter.api.extension.*;
 
 import static org.junit.jupiter.api.extension.ExtensionContext.*;
 
-public class SeleniumDriverExtension implements ParameterResolver, AfterEachCallback, TestExecutionExceptionHandler {
-    final static Namespace NAMESPACE = Namespace.create(SeleniumDriverExtension.class);
-    final static String DRIVER_KEY = "selenium-driver";
+public class SeleniumDriverExtension extends TypeBasedParameterResolver<WebDriver> implements AfterEachCallback, TestExecutionExceptionHandler {
+    public final static Namespace NAMESPACE = Namespace.create(SeleniumDriverExtension.class);
+    public final static String DRIVER_KEY = "selenium-driver";
 
     @Override
-    public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
-        return parameterContext.getParameter().getType().equals(WebDriver.class);
-    }
-
-    @Override
-    public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
+    public WebDriver resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
         WebDriver driver = createDriver();
         extensionContext.getStore(NAMESPACE).put(DRIVER_KEY, driver);
         return driver;
@@ -36,10 +32,9 @@ public class SeleniumDriverExtension implements ParameterResolver, AfterEachCall
 
     private void quitWebDriver(ExtensionContext extensionContext) {
         Store store = extensionContext.getStore(NAMESPACE);
-        WebDriver driver = (WebDriver) store.get(DRIVER_KEY);
+        WebDriver driver = store.remove(DRIVER_KEY, WebDriver.class);
         if (driver != null) {
             driver.quit();
-            store.remove(DRIVER_KEY);
         }
     }
 
@@ -48,4 +43,5 @@ public class SeleniumDriverExtension implements ParameterResolver, AfterEachCall
         chromeOptions.setHeadless(true);
         return new ChromeDriver(chromeOptions);
     }
+
 }
