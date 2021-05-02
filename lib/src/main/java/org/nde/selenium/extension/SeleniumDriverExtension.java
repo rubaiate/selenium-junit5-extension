@@ -17,7 +17,7 @@ public class SeleniumDriverExtension implements ParameterResolver, AfterEachCall
     @Override
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
         WebDriver driver = createDriver();
-        extensionContext.getStore(NAMESPACE).put("selenium-driver", driver);
+        extensionContext.getStore(NAMESPACE).put(DRIVER_KEY, driver);
         return driver;
     }
 
