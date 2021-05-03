@@ -14,7 +14,10 @@ public class SeleniumDriverExtension extends TypeBasedParameterResolver<WebDrive
 
     @Override
     public WebDriver resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
-        WebDriver driver = createDriver();
+        boolean headless = getHeadless(extensionContext);
+
+        WebDriver driver = createDriver(headless);
+
         extensionContext.getStore(NAMESPACE).put(DRIVER_KEY, driver);
         return driver;
     }
@@ -38,10 +41,17 @@ public class SeleniumDriverExtension extends TypeBasedParameterResolver<WebDrive
         }
     }
 
-    private WebDriver createDriver(){
+    private WebDriver createDriver(boolean headless){
         ChromeOptions chromeOptions = new ChromeOptions();
-        chromeOptions.setHeadless(true);
+        chromeOptions.setHeadless(headless);
         return new ChromeDriver(chromeOptions);
     }
 
+    private boolean getHeadless(ExtensionContext extensionContext) {
+        Headless headless = extensionContext.getTestMethod().get().getDeclaredAnnotation(Headless.class);
+        if(headless!=null){
+            return headless.value();
+        }
+        return true;
+    }
 }

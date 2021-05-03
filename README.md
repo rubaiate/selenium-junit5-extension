@@ -47,7 +47,8 @@ Junit 5 extensions will give us helping hand here.
 
 #### [Junit 5 Extensions](https://junit.org/junit5/docs/current/user-guide/#extensions)
 After going through available features, I came up with following plan.
-1. Inject WebDriver into each test method using [**ParameterResolver**](https://junit.org/junit5/docs/current/user-guide/#extensions-parameter-resolution). 
+1. Inject WebDriver into each test method using [**ParameterResolver**](https://junit.org/junit5/docs/current/user-guide/#extensions-parameter-resolution).
+We are going to use [**TypeBasedParameterResolver**](https://github.com/junit-team/junit5/blob/r5.7.1/junit-jupiter-api/src/main/java/org/junit/jupiter/api/extension/support/TypeBasedParameterResolver.java) which is more convenient.
 2. Attach WebDriver into **ExtensionContext** using *store* while resolving the parameter.
 3. Retrieve WebDriver from  **ExtensionContext** and call quit [*afterEach*](https://junit.org/junit5/docs/current/user-guide/#extensions-lifecycle-callbacks) method.
    Or If exceptions have thrown do the same to release the driver.
@@ -55,14 +56,10 @@ After going through available features, I came up with following plan.
 ##### Injecting and WebDriver
 ```java
     @Override
-    public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
-        return parameterContext.getParameter().getType().equals(WebDriver.class);
-    }
+    public WebDriver resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
+        WebDriver driver = createDriver(true);
 
-    @Override
-    public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
-        WebDriver driver = createDriver();
-        extensionContext.getStore(NAMESPACE).put("selenium-driver", driver);
+        extensionContext.getStore(NAMESPACE).put(DRIVER_KEY, driver);
         return driver;
     }
 ```
@@ -75,12 +72,11 @@ After going through available features, I came up with following plan.
     }
 
     private void quitWebDriver(ExtensionContext extensionContext) {
-        ExtensionContext.Store store = extensionContext.getStore(NAMESPACE);
-        WebDriver driver = (WebDriver) store.get(DRIVER_KEY);
-        if (driver != null) {
-            driver.quit();
-            store.remove(DRIVER_KEY);
-        }
+         Store store = extensionContext.getStore(NAMESPACE);
+         WebDriver driver = store.remove(DRIVER_KEY, WebDriver.class);
+         if (driver != null) {
+             driver.quit();
+         }
     }
 ```
 
@@ -109,6 +105,28 @@ class SeleniumDriverExtensionTest {
         driver.get("https://junit.org");
     }
 }
+```
+
+#### Disable headless
+In a ci/cd pipeline test will be run as headless, most of the time, 
+but when running locally it is useful to disable *headless* specially for debugging purpose.
+Custom annotation **Headless** is created to indicate value for the headless parameter.
+```java
+    private boolean getHeadless(ExtensionContext extensionContext) {
+        Headless headless = extensionContext.getTestMethod().get().getDeclaredAnnotation(Headless.class);
+        if(headless!=null){
+            return headless.value();
+        }
+        return true;
+    }
+```
+##### Using **Headless** annotation to disable headless
+```java
+    @Test
+    @Headless(false)
+    public void testWebDriverAsParameter(WebDriver driver) {
+    ...
+    }
 ```
 ### Having a global web driver...
 You may be thinking about having a global WebDriver, but I find that is troublesome when your tests become more complex. 
